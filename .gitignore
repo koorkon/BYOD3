@@ -1,0 +1,30 @@
+# Terraform State and Local Files
+# The state file contains the exact configuration of your resources and any sensitive outputs.
+# It should be stored in a remote backend, NOT in Git.
+*.tfstate
+*.tfstate.*
+
+# Local provider/module cache directory
+.terraform/
+.terraformrc
+terraform.rc
+
+# Variable Files (Likely to contain sensitive data/secrets)
+# Never commit files that hold secrets like database passwords or API keys.
+*.tfvars
+*.tfvars.json
+
+# Crash logs and saved plans
+crash.log
+*.tfplan
+
+# Dependency Lock File
+# Note: It is generally RECOMMENDED to COMMIT .terraform.lock.hcl to ensure
+# consistent provider versions across all team members and CI/CD.
+# If you choose to ignore it, uncomment the line below:
+# .terraform.lock.hcl
+
+# IDE and OS generated files
+.vscode/
+.idea/
+.DS_Store
