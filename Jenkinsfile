@@ -1,109 +1,65 @@
 pipeline {
     agent any
-
     environment {
-        AWS_REGION = 'us-east-1'
+        TF_VAR_FILE = "vars/dev.tfvars" 
+        AWS_DEFAULT_REGION = "us-east-1"
     }
-
     stages {
-
-        /* ================= TASK 1 ================= */
-        stage('Terraform Apply') {
+        stage('Provision & Capture') {
             steps {
-                dir('terraform') {
-                    sh '''
-                      terraform init
-                      terraform apply -auto-approve -var-file=dev.tfvars
-                    '''
-                    script {
-                        env.INSTANCE_IP = sh(
-                            script: "terraform output -raw instance_public_ip",
-                            returnStdout: true
-                        ).trim()
-
-                        env.INSTANCE_ID = sh(
-                            script: "terraform output -raw instance_id",
-                            returnStdout: true
-                        ).trim()
-                    }
+                sh "terraform init"
+                sh "terraform apply -auto-approve -var-file=${env.TF_VAR_FILE}"
+                
+                script {
+                    env.INSTANCE_IP = sh(script: "terraform output -raw instance_public_ip", returnStdout: true).trim()
+                    env.INSTANCE_ID = sh(script: "terraform output -raw instance_id", returnStdout: true).trim()
                 }
             }
         }
 
-        /* ================= TASK 2 ================= */
-        stage('Create Dynamic Inventory') {
+        stage('Dynamic Inventory') {
             steps {
-                sh '''
-                  echo "[splunk]" > dynamic_inventory.ini
-                  echo "${INSTANCE_IP} ansible_user=ec2-user ansible_ssh_private_key_file=~/.ssh/aws.pem" >> dynamic_inventory.ini
-                '''
+                sh "echo '[splunk_servers]\n${env.INSTANCE_IP} ansible_user=ubuntu' > dynamic_inventory.ini"
+                sh "cat dynamic_inventory.ini" 
             }
         }
 
-        /* ================= TASK 3 ================= */
-        stage('Wait for EC2 Health Check') {
+        stage('AWS Health Verification') {
             steps {
-                sh '''
-                  aws ec2 wait instance-status-ok \
-                  --instance-ids ${INSTANCE_ID} \
-                  --region ${AWS_REGION}
-                '''
+                echo "Waiting for instance ${env.INSTANCE_ID}..."
+                sh "aws ec2 wait instance-status-ok --instance-ids ${env.INSTANCE_ID}"
             }
         }
 
-        /* ================= TASK 4 ================= */
-        stage('Install Splunk') {
+        stage('Splunk Install & Test') {
             steps {
-                ansiblePlaybook(
-                    playbook: 'playbooks/splunk.yml',
-                    inventory: 'dynamic_inventory.ini',
-                    credentialsId: 'ansible-ssh-key'
-                )
+                ansiblePlaybook(playbook: 'playbooks/splunk.yml', inventory: 'dynamic_inventory.ini')
+                ansiblePlaybook(playbook: 'playbooks/test-splunk.yml', inventory: 'dynamic_inventory.ini')
             }
         }
 
-        stage('Test Splunk') {
-            steps {
-                ansiblePlaybook(
-                    playbook: 'playbooks/test-splunk.yml',
-                    inventory: 'dynamic_inventory.ini',
-                    credentialsId: 'ansible-ssh-key'
-                )
-            }
-        }
-
-        /* ================= TASK 5 ================= */
         stage('Validate Destroy') {
             steps {
-                input message: 'Proceed with Terraform Destroy?'
+                input message: "Infrastructure verified. Proceed to destroy?"
             }
         }
 
-        stage('Terraform Destroy') {
+        stage('Destroy') {
             steps {
-                dir('terraform') {
-                    sh 'terraform destroy -auto-approve -var-file=dev.tfvars'
-                }
+                // Task 5: Execute destroy
+                sh "terraform destroy -auto-approve -var-file=${env.TF_VAR_FILE}"
             }
         }
     }
-
-    /* ================= POST ACTIONS ================= */
     post {
         always {
-            sh 'rm -f dynamic_inventory.ini'
+            sh "rm -f dynamic_inventory.ini"
         }
-
         failure {
-            dir('terraform') {
-                sh 'terraform destroy -auto-approve -var-file=dev.tfvars'
-            }
+            sh "terraform destroy -auto-approve -var-file=${env.TF_VAR_FILE}"
         }
-
         aborted {
-            dir('terraform') {
-                sh 'terraform destroy -auto-approve -var-file=dev.tfvars'
-            }
+            sh "terraform destroy -auto-approve -var-file=${env.TF_VAR_FILE}"
         }
     }
 }
