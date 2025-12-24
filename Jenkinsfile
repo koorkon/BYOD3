@@ -13,7 +13,7 @@ pipeline {
         }
         stage('Provision & Capture') {
     steps {
-        withCredentials([usernamePassword(credentialsId: 'my-ssh-key-id', 
+        withCredentials([usernamePassword(credentialsId: 'aws-keys', 
                          passwordVariable: 'aws-secret-access-key', 
                          usernameVariable: 'aws-access-key-id')]) {
             
