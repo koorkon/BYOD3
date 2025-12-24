@@ -5,6 +5,12 @@ pipeline {
         AWS_DEFAULT_REGION = "us-east-1"
     }
     stages {
+        stage('Debug Workspace') {
+            steps {
+                sh "pwd"
+                sh "ls -R"
+            }
+        }
         stage('Provision & Capture') {
             steps {
                 sh "terraform init"
