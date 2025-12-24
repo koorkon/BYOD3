@@ -1,0 +1,14 @@
+---
+- name: Task 4 - Splunk Reachability Test
+  hosts: splunk_servers
+  tasks:
+    - name: Check if Splunk Web (Port 8000) is responding
+      uri:
+        url: "http://{{ ansible_host }}:8000"
+        status_code: 200
+      register: web_status
+
+    - name: Debug Status
+      debug:
+        msg: "Splunk is active and reachable!"
+      when: web_status.status == 200
