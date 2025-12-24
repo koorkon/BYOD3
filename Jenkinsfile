@@ -1,8 +1,11 @@
 pipeline {
     agent any
     environment {
-        TF_VAR_FILE = "./vars/dev.tfvars" 
+        TF_VAR_FILE = "vars/dev.tfvars"
         AWS_DEFAULT_REGION = "us-east-1"
+        AWS_CREDS = credentials('aws-keys')
+        AWS_ACCESS_KEY_ID = "${env.AWS_CREDS_USR}"
+        AWS_SECRET_ACCESS_KEY = "${env.AWS_CREDS_PSW}"
     }
     stages {
         stage('Debug Workspace') {
@@ -11,20 +14,18 @@ pipeline {
                 sh "ls -R"
             }
         }
+        tages {
         stage('Provision & Capture') {
-    steps {
-        withCredentials([usernamePassword(credentialsId: 'aws-keys', 
-                         passwordVariable: 'aws-secret-access-key', 
-                         usernameVariable: 'aws-access-key-id')]) {
-            
-            sh "terraform init"
-            // Adding the region explicitly helps avoid the IMDS error
-            sh "terraform apply -auto-approve -var-file=${env.TF_VAR_FILE}"
-            
-            script {
-                env.INSTANCE_IP = sh(script: "terraform output -raw instance_public_ip", returnStdout: true).trim()
-                env.INSTANCE_ID = sh(script: "terraform output -raw instance_id", returnStdout: true).trim()
+            steps {
+                sh "terraform init"
+                sh "terraform apply -auto-approve -var-file=${env.TF_VAR_FILE}"
+                
+                script {
+                    env.INSTANCE_IP = sh(script: "terraform output -raw instance_public_ip", returnStdout: true).trim()
+                    env.INSTANCE_ID = sh(script: "terraform output -raw instance_id", returnStdout: true).trim()
+                }
             }
+        }
         }
     }
 }
