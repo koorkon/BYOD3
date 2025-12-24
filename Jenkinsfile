@@ -14,7 +14,6 @@ pipeline {
                 sh "ls -R"
             }
         }
-        tages {
         stage('Provision & Capture') {
             steps {
                 sh "terraform init"
@@ -26,9 +25,6 @@ pipeline {
                 }
             }
         }
-        }
-    }
-}
 
         stage('Dynamic Inventory') {
             steps {
