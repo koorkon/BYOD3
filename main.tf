@@ -1,23 +1,15 @@
-terraform {
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 6.0"
-    }
-  }
-}
+# main.tf
 
 provider "aws" {
-  region = var.aws_region
+  region = var.aws_region  
 }
 
-resource "aws_instance" "dev_ec2" {
-  ami           = var.ami_id
-  instance_type = var.instance_type
-  key_name      = var.key_name
+resource "aws_instance" "splunk_server" 
+  ami           = "ami-012967cc5a8c9f891" 
+  instance_type = "t2.micro"
+  subnet_id     = var.subnet_id
 
   tags = {
     Name = var.instance_name
-    Env  = var.environment
   }
 }
