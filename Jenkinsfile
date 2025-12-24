@@ -8,7 +8,7 @@ pipeline {
         stage('Provision & Capture') {
             steps {
                 sh "terraform init"
-                sh "terraform apply -auto-approve -var-file=${env.TF_VAR_FILE}"
+                sh "terraform apply -auto-approve -var-file=./vars/dev.tfvars"
                 
                 script {
                     env.INSTANCE_IP = sh(script: "terraform output -raw instance_public_ip", returnStdout: true).trim()
@@ -46,8 +46,7 @@ pipeline {
 
         stage('Destroy') {
             steps {
-                // Task 5: Execute destroy
-                sh "terraform destroy -auto-approve -var-file=${env.TF_VAR_FILE}"
+                sh "terraform destroy -auto-approve -var-file=./vars/dev.tfvars"
             }
         }
     }
@@ -56,10 +55,10 @@ pipeline {
             sh "rm -f dynamic_inventory.ini"
         }
         failure {
-            sh "terraform destroy -auto-approve -var-file=${env.TF_VAR_FILE}"
+            sh "terraform destroy -auto-approve -var-file=./vars/dev.tfvars"
         }
         aborted {
-            sh "terraform destroy -auto-approve -var-file=${env.TF_VAR_FILE}"
+            sh "terraform destroy -auto-approve -var-file=./vars/dev.tfvars"
         }
     }
 }
