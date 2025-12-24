@@ -1,9 +1,5 @@
-# vars/dev.tfvars
-
-# Add this line (it was missing or misspelled)
 environment   = "dev"
-
-# Ensure these are also present
+ami_id = "ami-0e2c8ca47bde147c5"
 subnet_id     = "subnet-0141cb5b218fa3e5a" 
 vpc_id        = "vpc-0fe260f16248ea96b" 
 instance_type = "t2.micro" 
